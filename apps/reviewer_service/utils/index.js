@@ -1,14 +1,18 @@
 const puppeteer = require('puppeteer-extra');
 const pluginStealth = require('puppeteer-extra-plugin-stealth');
-
+const dotenv = require('dotenv');
+dotenv.config();
+const PROXY_URL = process.env.PROXY_URL;
+const PROXY_USERNAME = process.env.PROXY_USERNAME;
+const PROXY_PASSWORD = process.env.PROXY_PASSWORD;
 puppeteer.use(pluginStealth());
 
 const headless = !process.argv.includes('-h');
 
 const setUpScraper = (url, isHeadless, urlGoogleMaps) => {
-  const proxyURL = 'gw.dataimpulse.com:823';
-  const username = '74ff31ec3adc305985f9';
-  const password = '974d90e3632c87dd';
+  const proxyURL = PROXY_URL;
+  const username = PROXY_USERNAME;
+  const password = PROXY_PASSWORD;
 
   puppeteer
     .launch({
