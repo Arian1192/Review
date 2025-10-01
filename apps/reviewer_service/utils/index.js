@@ -6,22 +6,18 @@ puppeteer.use(pluginStealth());
 const headless = !process.argv.includes('-h');
 
 const setUpScraper = (url, isHeadless, urlGoogleMaps) => {
-  // const proxyURL = 'gw.dataimpulse.com:823';
-  // const username = '74ff31ec3adc305985f9';
-  // const password = '974d90e3632c87dd';
-
-  // puppeteer
-  //   .launch({
-  //     headless: isHeadless,
-  //     args: [`--proxy-server=${proxyURL}`],
-  //   })
-  //   .then(async (browser) => {
+  const proxyURL = 'gw.dataimpulse.com:823';
+  const username = '74ff31ec3adc305985f9';
+  const password = '974d90e3632c87dd';
 
   puppeteer
     .launch({
-      headless: isHeadless || false,
+      headless: isHeadless,
+      args: [`--proxy-server=${proxyURL}`],
     })
     .then(async (browser) => {
+
+
       try {
         console.log('Opening browser ...');
         const page = await browser.newPage();
@@ -31,10 +27,10 @@ const setUpScraper = (url, isHeadless, urlGoogleMaps) => {
         await page.mouse.move(200, 100);
         await page.mouse.up();
         // Autenticación proxy si es necesario
-        // await page.authenticate({
-        //   username,
-        //   password,
-        // });
+        await page.authenticate({
+          username,
+          password,
+        });
         const pages = await browser.pages();
         pages[0].close();
         await page.goto(url, {
@@ -74,114 +70,102 @@ const setUpScraper = (url, isHeadless, urlGoogleMaps) => {
           await page.type('input[type="password"]', 'M44r1144n44!!!');
           await page.keyboard.press('Enter');
 
-          // Manejo de CAPTCHA si aparece
-          try {
-            const solver = new Captcha.Solver();
-          } catch (error) {}
 
           await page.goto(urlGoogleMaps, { waitUntil: 'networkidle2' });
-          await page.waitForXPath("//span[contains(text(),'Reseñas')]", {
-            visible: true,
+
+          await page.waitForTimeout(10000);
+
+          await page.mouse.move(200, 200);
+          await page.waitForTimeout(500 + Math.random() * 500);
+          await page.mouse.move(400, 250);
+          await page.waitForTimeout(500 + Math.random() * 500);
+
+
+          await page.waitForXPath(`//div[contains(text(), "Reseñas") or contains(text(), "Reviews")]`, {
+            visible: true
           });
-          const [span] = await page.$x("//span[contains(text(),'Reseñas')]");
-          await span.click();
-          console.log('Click en span Reseñas');
+          const [btnDiv] = await page.$x(`//div[contains(text(), "Reseñas") or contains(text(), "Reviews")]`);
 
-          await page.waitForXPath("//span[contains(text(),'Añadir reseña')]", {
-            visible: true,
+
+          if (btnDiv) {
+            const btn = await btnDiv.evaluateHandle(el => el.closest("button"));
+            await btn.click();
+          }
+          await page.waitForTimeout(5000);
+          await page.mouse.move(100, 100);
+          await page.waitForTimeout(1000 + Math.random() * 500);
+          await page.mouse.move(200, 250);
+          await page.waitForTimeout(500 + Math.random() * 500);
+
+
+          await page.waitForXPath(`//span[contains(text(), "Escribir una reseña") or contains(text(), "Write a review")]`, {
+            visible: true
           });
-          const [span2] = await page.$x(
-            "//span[contains(text(),'Añadir reseña')]",
-          );
-          await span2.click();
-          console.log('Click en span Añadir reseña');
+          const [span] = await page.$x(`//span[contains(text(), "Escribir una reseña") or contains(text(), "Write a review")]`);
 
-          const iframe_found = False;
-          const possible_iframes = [
-            '/html/body/div[18]/iframe',
-            "//iframe[contains(@src, 'reviews')]",
-            "//iframe[contains(@src, 'maps')]",
-            'iframe',
-          ];
 
-          // Esperar a que aparezca el textarea
-          try {
-            const textoResena = 'Esta es una reseña automatizada de prueba.';
-            await page.waitForSelector(
-              'textarea[aria-label="Comparte detalles de tu experiencia en este lugar"]',
-              { visible: true, timeout: 10000 },
-            );
+          if (span) {
+            const btn = await span.evaluateHandle(el => el.closest("button"));
+            await btn.click();
+          }
 
-            const textarea = await page.$(
-              'textarea[aria-label="Comparte detalles de tu experiencia en este lugar"]',
-            );
-            await textarea.focus();
-            await page.type(
-              'textarea[aria-label="Comparte detalles de tu experiencia en este lugar"]',
-              textoResena,
-              { delay: 50 },
-            );
+          await page.waitForTimeout(2000);
 
-            // Disparar manualmente eventos input y change
-            await page.evaluate(() => {
-              const el = document.querySelector(
-                'textarea[aria-label="Comparte detalles de tu experiencia en este lugar"]',
-              );
-              if (el) {
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-            });
+          const iframeElementHandle = await page.waitForSelector('iframe[name="goog-reviews-write-widget"')
 
-            const value = await page.$eval(
-              'textarea[aria-label="Comparte detalles de tu experiencia en este lugar"]',
-              (el) => el.value,
-            );
-            console.log('Valor en textarea:', value);
-            if (value !== textoResena) {
-              console.error(
-                '❌ El texto no se escribió correctamente en el textarea',
-              );
-              await page.screenshot({ path: 'error_textarea_no_escrito.png' });
-              return;
-            } else {
-              console.log('✅ Texto escrito correctamente en el textarea');
+          console.log('Iframe handle:', iframeElementHandle);
+          const frame = await iframeElementHandle.contentFrame(); // Espera a que se resuelva el Frame
+          await page.waitForTimeout(10000); // Espera adicional para asegurarse de que el contenido del iframe esté completamente cargado
+          if (frame) {
+            const iframeContent = await frame.evaluate(() => document.body.innerHTML);
+            const textareaHandle = await frame.waitForSelector('#c2');
+            if (textareaHandle) {
+              await textareaHandle.click();
+              await textareaHandle.type('Es uno de los mejores talleres de barcelona', { delay: 200 });
+
             }
-          } catch (err) {
-            console.error('No se pudo escribir en el textarea: ', err.message);
-            await page.screenshot({ path: 'error_type_textarea.png' });
-            return;
+            const rating = Math.random() < 0.5 ? 4 : 5;
+
+            let starClicked = false;
+
+            switch (rating) {
+              case 4: {
+                const fourthStar = await frame.waitForSelector('div[aria-label="Cuatro estrellas"]', { timeout: 2000 }).catch(() => null);
+                if (fourthStar) {
+                  await fourthStar.click();
+                  console.log('✅ Seleccionadas 4 estrellas');
+                  starClicked = true;
+                }
+                break;
+              }
+              case 5: {
+                const fifthStar = await frame.waitForSelector('div[aria-label="Cinco estrellas"]', { timeout: 2000 }).catch(() => null);
+                if (fifthStar) {
+                  await fifthStar.click();
+                  console.log('✅ Seleccionadas 5 estrellas');
+                  starClicked = true;
+                }
+                break;
+              }
+
+            }
+            if (!starClicked) {
+              console.error('❌ No encontré estrellas en el modal del iframe');
+              await page.screenshot({ path: 'error_no_stars_iframe.png' });
+            }
+
+          }
+          await page.waitForTimeout(4000);
+          const [submitButton] = await frame.$x(`//button[contains(., 'Publicar') or contains(., 'Post')]`);
+          if (submitButton) {
+            await submitButton.click();
+            console.log('✅ Reseña publicada');
+          } else {
+            console.error('❌ No encontré el botón de publicar en el iframe');
+            await page.screenshot({ path: 'error_no_submit_button_iframe.png' });
           }
 
-          // Esperar a que se rendericen las estrellas
-          try {
-            await page.waitForSelector('span[aria-label$="estrellas"]', {
-              visible: true,
-              timeout: 10000,
-            });
-          } catch (err) {
-            console.error('No se encontraron las estrellas: ', err.message);
-            await page.screenshot({ path: 'error_stars.png' });
-            return;
-          }
 
-          // Obtener todas las estrellas
-          const stars = await page.$$('span[aria-label$="estrellas"]');
-          if (!stars.length) {
-            console.error('❌ No encontré estrellas en el modal');
-            await page.screenshot({ path: 'error_no_stars.png' });
-            return;
-          }
-
-          // Random entre 4 y 5 estrellas
-          const rating = Math.random() < 0.5 ? 4 : 5;
-          await stars[rating - 1].click();
-          console.log(`✅ Seleccionadas ${rating} estrellas`);
-
-          await page.waitForTimeout(120000);
-
-          // For headless mode, 2FA needs to be handled here.
-          // Login via gmail app works autmatically.
         }
       } catch (error) {
         console.error('Error general en el scraper:', error.message);

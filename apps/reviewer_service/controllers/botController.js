@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { setUpScraper } = require('../utils');
+const { setUpScraper } = require('../utils/index');
 const dotenv = require('dotenv');
 dotenv.config();
 const GEMINI_API = process.env.GEMINI_API;
