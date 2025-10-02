@@ -1,6 +1,6 @@
 const express = require("express");
 const morgan = require("morgan");
-const { MainRouter } = require("./routers");
+const { MainRouter } = require("./apps/reviewer_service/routers");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
