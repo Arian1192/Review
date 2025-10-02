@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(morgan(""));
+app.use(morgan("dev"));
 app.use(MainRouter);
 
 app.listen(PORT, () => {
