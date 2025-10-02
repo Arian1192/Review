@@ -121,7 +121,7 @@ const setUpScraper = (url, isHeadless, urlGoogleMaps) => {
           const frame = await iframeElementHandle.contentFrame(); // Espera a que se resuelva el Frame
           await page.waitForTimeout(10000); // Espera adicional para asegurarse de que el contenido del iframe esté completamente cargado
           if (frame) {
-            const iframeContent = await frame.evaluate(() => document.body.innerHTML);
+            //const iframeContent = await frame.evaluate(() => document.body.innerHTML);
             const textareaHandle = await frame.waitForSelector('#c2');
             if (textareaHandle) {
               await textareaHandle.click();
